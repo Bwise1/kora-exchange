@@ -6,7 +6,10 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/Bwise1/interstellar/internal/users"
+	"github.com/Bwise1/interstellar/internal/utils"
+	"github.com/Bwise1/interstellar/internal/wallets"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 )
 
@@ -18,8 +21,14 @@ func main() {
 		log.Println("No .env file found, using system environment variables")
 	}
 
+	// Get port and ensure it has colon prefix
+	port := getEnv("PORT", "8080")
+	if port[0] != ':' {
+		port = ":" + port
+	}
+
 	cfg := config{
-		addr: ":8080",
+		addr: port,
 		db: dbConfig{
 			dsn: getEnv("DATABASE_URL", ""),
 		},
@@ -28,18 +37,48 @@ func main() {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 	slog.SetDefault(logger)
 
-	conn, err := pgx.Connect(ctx, cfg.db.dsn)
+	// Create connection pool
+	pool, err := pgxpool.New(ctx, cfg.db.dsn)
 	if err != nil {
-		panic(err)
+		log.Fatal("Unable to connect to database:", err)
 	}
-	defer conn.Close(ctx)
+	defer pool.Close()
 
-	logger.Info("connected to database", "dsn", cfg.db.dsn)
+	// Test connection
+	if err := pool.Ping(ctx); err != nil {
+		log.Fatal("Unable to ping database:", err)
+	}
+
+	logger.Info("connected to database successfully")
+
+	// Get JWT secret
+	jwtSecret := getEnv("JWT_SECRET", "")
+	if jwtSecret == "" {
+		log.Fatal("JWT_SECRET is required")
+	}
+
+	// Initialize JWT with secret and expiration (7 days)
+	utils.InitJWT(jwtSecret, 24*7)
+
+	// Initialize wallet dependencies
+	walletRepo := wallets.NewRepository(pool)
+	walletService := wallets.NewService(walletRepo)
+	walletHandler := wallets.NewHandler(walletService)
+
+	// Initialize user dependencies
+	userRepo := users.NewRepository(pool)
+	userService := users.NewService(userRepo)
+	userHandler := users.NewHandler(userService, walletService)
 
 	api := application{
-		config: cfg,
-		db:     conn,
+		config:        cfg,
+		db:            pool,
+		userHandler:   userHandler,
+		walletHandler: walletHandler,
 	}
+
+	logger.Info("starting server", "address", cfg.addr)
+
 	if err := api.run(api.mount()); err != nil {
 		slog.Error("server failed to start", "error", err)
 		os.Exit(1)
