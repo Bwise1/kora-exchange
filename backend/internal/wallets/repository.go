@@ -159,10 +159,10 @@ func (r *Repository) UpdateBalances(ctx context.Context, wallet *Wallet) error {
 
 	query := `
 		UPDATE wallets
-		SET balances = $1, updated_at = $2
-		WHERE id = $3
+		SET balances = $1, updated_at = NOW()
+		WHERE id = $2
 	`
-	_, err = r.db.Exec(ctx, query, balancesJSON, wallet.UpdatedAt, wallet.ID)
+	_, err = r.db.Exec(ctx, query, balancesJSON, wallet.ID)
 	return err
 }
 

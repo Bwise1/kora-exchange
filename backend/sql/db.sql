@@ -30,3 +30,30 @@ CREATE TABLE IF NOT EXISTS wallets (
 CREATE INDEX IF NOT EXISTS idx_wallets_balances ON wallets USING GIN (balances);
 CREATE INDEX IF NOT EXISTS idx_wallets_user_id ON wallets(user_id);
 CREATE INDEX IF NOT EXISTS idx_wallets_address ON wallets(wallet_address);
+
+-- Transactions table - stores all transaction types (DEPOSIT, SWAP, TRANSFER)
+CREATE TABLE IF NOT EXISTS transactions (
+    id UUID PRIMARY KEY,
+    transaction_type VARCHAR(20) NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'COMPLETED',
+    wallet_id UUID NOT NULL REFERENCES wallets(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    recipient_wallet_id UUID REFERENCES wallets(id) ON DELETE SET NULL,
+    from_currency VARCHAR(10) NOT NULL,
+    from_amount NUMERIC(20, 8) NOT NULL,
+    to_currency VARCHAR(10),
+    to_amount NUMERIC(20, 8),
+    exchange_rate NUMERIC(20, 8),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+
+    CONSTRAINT check_transaction_type CHECK (transaction_type IN ('DEPOSIT', 'SWAP', 'TRANSFER', 'WITHDRAW')),
+    CONSTRAINT check_status CHECK (status IN ('PENDING', 'COMPLETED', 'FAILED'))
+);
+
+-- Indexes for transactions table
+CREATE INDEX IF NOT EXISTS idx_transactions_wallet_id ON transactions(wallet_id);
+CREATE INDEX IF NOT EXISTS idx_transactions_user_id ON transactions(user_id);
+CREATE INDEX IF NOT EXISTS idx_transactions_recipient_wallet_id ON transactions(recipient_wallet_id);
+CREATE INDEX IF NOT EXISTS idx_transactions_type ON transactions(transaction_type);
+CREATE INDEX IF NOT EXISTS idx_transactions_created_at ON transactions(created_at DESC);

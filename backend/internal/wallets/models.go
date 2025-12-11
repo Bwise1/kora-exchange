@@ -81,3 +81,23 @@ func (w *Wallet) UpdateBalance(currency string, amount float64) {
 	currentBalance := w.GetBalance(currency)
 	w.Balances[currency] = currentBalance + amount
 }
+
+// GetID returns the wallet ID
+func (w *Wallet) GetID() uuid.UUID {
+	return w.ID
+}
+
+// GetBalances returns all currency balances
+func (w *Wallet) GetBalances() map[string]float64 {
+	return w.Balances
+}
+
+// GetUpdatedAt returns the last update timestamp
+func (w *Wallet) GetUpdatedAt() time.Time {
+	return w.UpdatedAt
+}
+
+// SetUpdatedAt sets the update timestamp
+func (w *Wallet) SetUpdatedAt(t time.Time) {
+	w.UpdatedAt = t
+}

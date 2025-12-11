@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 
+	"github.com/Bwise1/interstellar/internal/transactions"
 	"github.com/Bwise1/interstellar/internal/users"
 	"github.com/Bwise1/interstellar/internal/utils"
 	"github.com/Bwise1/interstellar/internal/wallets"
@@ -65,16 +66,22 @@ func main() {
 	walletService := wallets.NewService(walletRepo)
 	walletHandler := wallets.NewHandler(walletService)
 
+	// Initialize transaction dependencies
+	transactionRepo := transactions.NewRepository(pool)
+	transactionService := transactions.NewService(transactionRepo, walletRepo)
+	transactionHandler := transactions.NewHandler(transactionService)
+
 	// Initialize user dependencies
 	userRepo := users.NewRepository(pool)
 	userService := users.NewService(userRepo)
 	userHandler := users.NewHandler(userService, walletService)
 
 	api := application{
-		config:        cfg,
-		db:            pool,
-		userHandler:   userHandler,
-		walletHandler: walletHandler,
+		config:             cfg,
+		db:                 pool,
+		userHandler:        userHandler,
+		walletHandler:      walletHandler,
+		transactionHandler: transactionHandler,
 	}
 
 	logger.Info("starting server", "address", cfg.addr)
