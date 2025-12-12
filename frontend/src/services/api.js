@@ -85,6 +85,24 @@ export const transactionAPI = {
     });
   },
 
+  transfer: async (recipientAddress, fromCurrency, amount, toCurrency) => {
+    const payload = {
+      recipient_wallet_address: recipientAddress,
+      from_currency: fromCurrency,
+      amount: amount,
+    };
+
+    // Only include to_currency if it's specified
+    if (toCurrency) {
+      payload.to_currency = toCurrency;
+    }
+
+    return fetchWithAuth('/api/transactions/transfer', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
   getTransactions: async (limit = 50, offset = 0) => {
     return fetchWithAuth(`/api/transactions?limit=${limit}&offset=${offset}`);
   },

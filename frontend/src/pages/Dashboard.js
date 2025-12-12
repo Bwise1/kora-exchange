@@ -4,6 +4,7 @@ import WalletCard from '../components/WalletCard';
 import WalletPieChart from '../components/WalletPieChart';
 import DepositModal from '../components/DepositModal';
 import SwapModal from '../components/SwapModal';
+import SendModal from '../components/SendModal';
 import ExchangeRatesCard from '../components/ExchangeRatesCard';
 import { useWallet, useBalances, useFxRates } from '../hooks/useWallet';
 import { fxRatesAPI } from '../services/api';
@@ -12,12 +13,14 @@ import { Eye, Plus, ArrowLeftRight, Send, Download } from 'lucide-react';
 export default function Dashboard() {
   const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
   const [isSwapModalOpen, setIsSwapModalOpen] = useState(false);
+  const [isSendModalOpen, setIsSendModalOpen] = useState(false);
   const [isRefreshingRates, setIsRefreshingRates] = useState(false);
   const { data: walletData, isLoading: walletLoading, refetch: refetchWallet } = useWallet();
   const { data: balancesData, isLoading: balancesLoading, refetch: refetchBalances } = useBalances();
   const { data: fxData, isLoading: fxLoading, refetch: refetchFxRates } = useFxRates('USD');
 
   const balances = balancesData?.data || walletData?.data?.balances || {};
+  const walletAddress = walletData?.data?.wallet_address || '';
   const isLoading = walletLoading || balancesLoading || fxLoading;
 
   // Get real-time exchange rates from API with fallback
@@ -71,6 +74,12 @@ export default function Dashboard() {
     refetchBalances();
   };
 
+  const handleSendSuccess = () => {
+    // Refetch wallet and balances after successful transfer
+    refetchWallet();
+    refetchBalances();
+  };
+
   const handleRefreshRates = async () => {
     setIsRefreshingRates(true);
     try {
@@ -86,6 +95,27 @@ export default function Dashboard() {
   return (
     <Layout>
       <div className="max-w-7xl mx-auto">
+        {/* Wallet Address Banner */}
+        {walletAddress && (
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-4 mb-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-medium text-gray-600 mb-1">Your Wallet Address</p>
+                <p className="text-sm font-mono font-semibold text-gray-900">{walletAddress}</p>
+              </div>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(walletAddress);
+                  // You could add a toast notification here
+                }}
+                className="px-4 py-2 bg-white hover:bg-gray-50 text-blue-600 text-sm font-medium rounded-lg border border-blue-200 transition-colors"
+              >
+                Copy
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Portfolio Value Section */}
         <div className="bg-white rounded-2xl border border-gray-200 p-8 mb-6">
           <div className="flex items-start justify-between">
@@ -123,7 +153,10 @@ export default function Dashboard() {
                   <ArrowLeftRight className="w-4 h-4" />
                   Swap
                 </button>
-                <button className="inline-flex items-center gap-2 px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded-lg font-medium transition-colors">
+                <button
+                  onClick={() => setIsSendModalOpen(true)}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded-lg font-medium transition-colors"
+                >
                   <Send className="w-4 h-4" />
                   Send
                 </button>
@@ -205,6 +238,14 @@ export default function Dashboard() {
           isOpen={isSwapModalOpen}
           onClose={() => setIsSwapModalOpen(false)}
           onSuccess={handleSwapSuccess}
+          balances={balances}
+        />
+
+        {/* Send Modal */}
+        <SendModal
+          isOpen={isSendModalOpen}
+          onClose={() => setIsSendModalOpen(false)}
+          onSuccess={handleSendSuccess}
           balances={balances}
         />
       </div>

@@ -176,3 +176,113 @@ func (s *Service) GetTransactionsByUser(ctx context.Context, userID uuid.UUID, l
 func (s *Service) GetTransaction(ctx context.Context, id uuid.UUID) (*Transaction, error) {
 	return s.repo.GetByID(ctx, id)
 }
+
+// ProcessTransfer handles transferring funds between wallets
+func (s *Service) ProcessTransfer(ctx context.Context, senderUserID uuid.UUID, req *TransferRequest) (*Transaction, error) {
+	// Get sender's wallet
+	senderWallet, err := s.walletRepo.GetByUserID(ctx, senderUserID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get sender wallet: %w", err)
+	}
+	if senderWallet == nil {
+		return nil, fmt.Errorf("sender wallet not found")
+	}
+
+	// Get recipient's wallet by address
+	recipientWallet, err := s.walletRepo.GetByAddress(ctx, req.RecipientWalletAddress)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get recipient wallet: %w", err)
+	}
+	if recipientWallet == nil {
+		return nil, fmt.Errorf("recipient wallet not found")
+	}
+
+	// Prevent sending to self
+	if senderWallet.ID == recipientWallet.ID {
+		return nil, fmt.Errorf("cannot transfer to your own wallet")
+	}
+
+	// Check if sender has sufficient balance
+	senderBalance := senderWallet.GetBalance(req.FromCurrency)
+	if senderBalance < req.Amount {
+		return nil, fmt.Errorf("insufficient balance: have %f, need %f", senderBalance, req.Amount)
+	}
+
+	// Determine target currency (default to same as source if not specified)
+	toCurrency := req.FromCurrency
+	if req.ToCurrency != nil && *req.ToCurrency != "" {
+		toCurrency = *req.ToCurrency
+	}
+
+	var receivedAmount float64
+	var exchangeRate *float64
+
+	// If currencies are different, perform conversion
+	if req.FromCurrency != toCurrency {
+		// Map stablecoin codes to real currency codes for FX service
+		fromReal := mapToRealCurrency(req.FromCurrency)
+		toReal := mapToRealCurrency(toCurrency)
+
+		// Get exchange rate
+		rate, err := s.fxService.GetRate(fromReal, toReal)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get exchange rate: %w", err)
+		}
+
+		if rate <= 0 {
+			return nil, fmt.Errorf("invalid exchange rate: %f", rate)
+		}
+
+		receivedAmount = req.Amount * rate
+		exchangeRate = &rate
+	} else {
+		// Same currency, no conversion needed
+		receivedAmount = req.Amount
+	}
+
+	// Update sender's balance
+	senderWallet.SetBalance(req.FromCurrency, senderBalance-req.Amount)
+	senderWallet.SetUpdatedAt(time.Now())
+
+	// Update recipient's balance
+	recipientBalance := recipientWallet.GetBalance(toCurrency)
+	recipientWallet.SetBalance(toCurrency, recipientBalance+receivedAmount)
+	recipientWallet.SetUpdatedAt(time.Now())
+
+	// Save both wallets
+	if err := s.walletRepo.UpdateBalances(ctx, senderWallet); err != nil {
+		return nil, fmt.Errorf("failed to update sender wallet: %w", err)
+	}
+
+	if err := s.walletRepo.UpdateBalances(ctx, recipientWallet); err != nil {
+		// TODO: Rollback sender wallet update
+		return nil, fmt.Errorf("failed to update recipient wallet: %w", err)
+	}
+
+	// Create transaction record
+	toCurrencyPtr := &toCurrency
+	receivedAmountPtr := &receivedAmount
+
+	tx := &Transaction{
+		ID:                uuid.New(),
+		TransactionType:   TransactionTypeTransfer,
+		Status:            TransactionStatusCompleted,
+		WalletID:          senderWallet.ID,
+		UserID:            senderUserID,
+		RecipientWalletID: &recipientWallet.ID,
+		FromCurrency:      req.FromCurrency,
+		FromAmount:        req.Amount,
+		ToCurrency:        toCurrencyPtr,
+		ToAmount:          receivedAmountPtr,
+		ExchangeRate:      exchangeRate,
+		CreatedAt:         time.Now(),
+		UpdatedAt:         time.Now(),
+	}
+
+	if err := s.repo.Create(ctx, tx); err != nil {
+		// TODO: Rollback wallet updates
+		return nil, fmt.Errorf("failed to create transaction record: %w", err)
+	}
+
+	return tx, nil
+}

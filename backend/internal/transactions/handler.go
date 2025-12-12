@@ -165,3 +165,49 @@ func (h *Handler) GetTransaction(w http.ResponseWriter, r *http.Request) {
 
 	response.Success(w, http.StatusOK, "Transaction retrieved successfully", tx)
 }
+
+// POST /api/transactions/transfer
+func (h *Handler) Transfer(w http.ResponseWriter, r *http.Request) {
+	// Get user ID from JWT context
+	userID, _ := middleware.GetUserIDFromContext(r.Context())
+	if userID == uuid.Nil {
+		response.Error(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	var req TransferRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.Error(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	// Validate request
+	if req.RecipientWalletAddress == "" {
+		response.Error(w, http.StatusBadRequest, "Recipient wallet address is required")
+		return
+	}
+
+	if req.FromCurrency == "" {
+		response.Error(w, http.StatusBadRequest, "From currency is required")
+		return
+	}
+
+	if req.Amount <= 0 {
+		response.Error(w, http.StatusBadRequest, "Amount must be greater than 0")
+		return
+	}
+
+	// If to_currency is specified, validate it's different from from_currency
+	if req.ToCurrency != nil && *req.ToCurrency != "" && *req.ToCurrency == req.FromCurrency {
+		response.Error(w, http.StatusBadRequest, "To currency must be different from from currency for conversion")
+		return
+	}
+
+	tx, err := h.service.ProcessTransfer(r.Context(), userID, &req)
+	if err != nil {
+		response.Error(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	response.Success(w, http.StatusCreated, "Transfer successful", tx)
+}

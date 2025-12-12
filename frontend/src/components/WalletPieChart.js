@@ -24,41 +24,44 @@ export default function WalletPieChart({ balances, isLoading }) {
     }))
     .sort((a, b) => b.balance - a.balance);
 
-  // Generate pie chart paths
+  // Generate pie chart slices using SVG paths
   const generatePieSlices = () => {
     if (chartData.length === 0) return [];
 
-    const radius = 100;
-    const centerX = 120;
-    const centerY = 120;
+    const size = 200;
+    const center = size / 2;
+    const radius = size / 2;
 
-    let currentAngle = -90; // Start from top
+    let cumulativePercent = 0;
 
-    return chartData.map((item, index) => {
-      const sliceAngle = (item.percentage / 100) * 360;
-      const startAngle = (currentAngle * Math.PI) / 180;
-      const endAngle = ((currentAngle + sliceAngle) * Math.PI) / 180;
+    return chartData.map((item) => {
+      const startAngle = cumulativePercent * 360;
+      const endAngle = (cumulativePercent + item.percentage / 100) * 360;
 
-      const x1 = centerX + radius * Math.cos(startAngle);
-      const y1 = centerY + radius * Math.sin(startAngle);
-      const x2 = centerX + radius * Math.cos(endAngle);
-      const y2 = centerY + radius * Math.sin(endAngle);
+      // Convert angles to radians
+      const startRad = (startAngle - 90) * (Math.PI / 180);
+      const endRad = (endAngle - 90) * (Math.PI / 180);
 
-      const largeArcFlag = sliceAngle > 180 ? 1 : 0;
+      // Calculate coordinates
+      const x1 = center + radius * Math.cos(startRad);
+      const y1 = center + radius * Math.sin(startRad);
+      const x2 = center + radius * Math.cos(endRad);
+      const y2 = center + radius * Math.sin(endRad);
+
+      const largeArcFlag = item.percentage > 50 ? 1 : 0;
 
       const pathData = [
-        `M ${centerX} ${centerY}`,
+        `M ${center} ${center}`,
         `L ${x1} ${y1}`,
         `A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2}`,
         'Z',
       ].join(' ');
 
-      currentAngle += sliceAngle;
+      cumulativePercent += item.percentage / 100;
 
       return {
         ...item,
         path: pathData,
-        index,
       };
     });
   };
@@ -119,51 +122,20 @@ export default function WalletPieChart({ balances, isLoading }) {
 
       {/* Pie Chart */}
       <div className="flex justify-center mb-6">
-        <svg width="240" height="240" viewBox="0 0 240 240">
-          {pieSlices.map((slice) => (
-            <g key={slice.currency}>
-              <path
-                d={slice.path}
-                fill={slice.info.color}
-                stroke="white"
-                strokeWidth="2"
-                className="transition-opacity hover:opacity-80 cursor-pointer"
-              />
-            </g>
+        <svg width="200" height="200" viewBox="0 0 200 200" className="transform rotate-0">
+          {pieSlices.map((slice, index) => (
+            <path
+              key={slice.currency}
+              d={slice.path}
+              fill={slice.info.color}
+              stroke="white"
+              strokeWidth="3"
+              className="transition-all hover:opacity-80 cursor-pointer"
+              style={{
+                filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1))',
+              }}
+            />
           ))}
-          {/* Center circle for donut effect */}
-          <circle
-            cx="120"
-            cy="120"
-            r="60"
-            fill="white"
-            stroke="#e5e7eb"
-            strokeWidth="1"
-          />
-          <text
-            x="120"
-            y="115"
-            textAnchor="middle"
-            className="text-xs font-medium fill-gray-500"
-          >
-            Total Balance
-          </text>
-          <text
-            x="120"
-            y="135"
-            textAnchor="middle"
-            className="text-lg font-bold fill-gray-900"
-          >
-            {chartData.length}
-          </text>
-          <text
-            x="120"
-            y="150"
-            textAnchor="middle"
-            className="text-xs fill-gray-500"
-          >
-            {chartData.length === 1 ? 'currency' : 'currencies'}
-          </text>
         </svg>
       </div>
 
