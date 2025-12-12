@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/Bwise1/interstellar/internal/auditlogs"
+	"github.com/Bwise1/interstellar/internal/utils"
 	"github.com/google/uuid"
 )
 
@@ -28,7 +29,7 @@ func AuditMiddleware(auditService AuditLoggerService) func(next http.Handler) ht
 
 			// Extract user ID from context if user is authenticated
 			var userID *uuid.UUID
-			id, ok := r.Context().Value(UserIDKey).(uuid.UUID)
+			id, ok := r.Context().Value(utils.UserIDKey).(uuid.UUID)
 			if ok && id != uuid.Nil {
 				userID = &id
 			}

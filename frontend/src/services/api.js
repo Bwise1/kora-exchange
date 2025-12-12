@@ -112,6 +112,23 @@ export const transactionAPI = {
   },
 };
 
+// User API
+export const userAPI = {
+  verifyPassword: async (password) => {
+    return fetchWithAuth('/api/users/verify-password', {
+      method: 'POST',
+      body: JSON.stringify({ password }),
+    });
+  },
+};
+
+// Audit Logs API
+export const auditLogsAPI = {
+  getAuditLogs: async (limit = 50, offset = 0) => {
+    return fetchWithAuth(`/api/audit-logs?limit=${limit}&offset=${offset}`);
+  },
+};
+
 // FX Rates API
 export const fxRatesAPI = {
   getRates: async (baseCurrency = 'USD') => {

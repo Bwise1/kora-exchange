@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"context"
 	"errors"
 	"time"
 
@@ -88,4 +89,34 @@ func ValidateToken(tokenString string) (*JWTClaims, error) {
 	}
 
 	return claims, nil
+}
+
+// Context keys for storing user info in request context
+type contextKey string
+
+const (
+	UserIDKey contextKey = "user_id"
+	EmailKey  contextKey = "email"
+)
+
+// SetUserIDInContext adds user ID to the context
+func SetUserIDInContext(ctx context.Context, userID uuid.UUID) context.Context {
+	return context.WithValue(ctx, UserIDKey, userID)
+}
+
+// SetEmailInContext adds email to the context
+func SetEmailInContext(ctx context.Context, email string) context.Context {
+	return context.WithValue(ctx, EmailKey, email)
+}
+
+// GetUserIDFromContext retrieves the user ID from the request context
+func GetUserIDFromContext(ctx context.Context) (uuid.UUID, bool) {
+	userID, ok := ctx.Value(UserIDKey).(uuid.UUID)
+	return userID, ok
+}
+
+// GetEmailFromContext retrieves the email from the request context
+func GetEmailFromContext(ctx context.Context) (string, bool) {
+	email, ok := ctx.Value(EmailKey).(string)
+	return email, ok
 }

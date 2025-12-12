@@ -24,6 +24,7 @@
 - **Exchange Rates Card** - Live rates for all supported currencies with refresh option
 - **Transaction History** - Complete audit trail of all operations
 - **Wallet Address** - Unique address for receiving funds with one-click copy
+- **Security Audit Logs** - Password-protected access to view all account activities including IP addresses, request methods, and timestamps
 
 
 ---
@@ -88,6 +89,7 @@ PORT=8080
 DATABASE_URL=postgres://postgres:password@localhost:5432/interstellar?sslmode=disable
 JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
 EXCHANGERATE_API_KEY=your-fastforex-api-key
+AUDIT_PASSWORD=admin123
 ```
 
 **Install dependencies:**
@@ -155,6 +157,10 @@ Since this is a sandbox prototype, you can create your own account through the r
 2. Copy the wallet address from the dashboard banner
 3. Use the "Send" feature from your first account to transfer funds
 
+**Audit Logs Access:**
+- Default audit password: `admin123`
+- Can be changed in backend `.env` file via `AUDIT_PASSWORD` variable
+
 ---
 
 ## 🎯 Feature Walkthrough
@@ -197,6 +203,16 @@ Since this is a sandbox prototype, you can create your own account through the r
 - **Wallet Distribution**: Pie chart showing currency allocation
 - **Individual Balances**: Card view for each currency
 - **Wallet Address**: Easily copy your address to share with others
+
+### 7. Security Audit Logs
+1. Click **"Audit Logs"** in the side menu
+2. Enter the audit access password (default: `admin123`)
+3. View comprehensive security logs including:
+   - Operation type (LOGIN, REGISTER, DEPOSIT, SWAP, TRANSFER, etc.)
+   - Timestamp of each action
+   - Client IP address (with Cloudflare support)
+   - HTTP request method and path
+4. Track all account activities for security and compliance
 
 ---
 
@@ -277,12 +293,17 @@ Interstellar/
 - `POST /api/fx-rates/convert` - Convert between currencies
 - `POST /api/fx-rates/refresh` - Force refresh cache
 
+### Audit Logs (Protected)
+- `POST /api/users/verify-password` - Verify audit access password
+- `GET /api/audit-logs?limit=100&offset=0` - Get user's audit logs
+
 ---
 
 ### Database Schema
 - **users**: User accounts with credentials
 - **wallets**: One wallet per user with JSONB balances
 - **transactions**: Comprehensive transaction log with support for all transaction types
+- **audit_logs**: Security audit trail with user_id, IP addresses, operations, and request metadata
 
 ### Caching Strategy
 - FX rates are cached for 24 hours to reduce API calls

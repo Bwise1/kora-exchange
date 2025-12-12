@@ -1,12 +1,11 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Home, ArrowLeftRight, Clock, LogOut } from 'lucide-react';
+import { Home, Shield, LogOut } from 'lucide-react';
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: Home },
-  { name: 'Swap', href: '/swap', icon: ArrowLeftRight },
-  { name: 'Transactions', href: '/transactions', icon: Clock },
+  { name: 'Audit Logs', href: '/audit-logs', icon: Shield },
 ];
 
 export default function Layout({ children }) {

@@ -71,12 +71,15 @@ func (app *application) mount() http.Handler {
 				r.Get("/{id}", app.transactionHandler.GetTransaction)  // Get transaction by ID
 			})
 
-			// User profile routes (commented out for now)
-			// r.Route("/users", func(r chi.Router) {
-			// 	r.Get("/profile", app.userHandler.GetProfile)
-			// 	r.Put("/profile", app.userHandler.UpdateProfile)
-			// 	r.Delete("/profile", app.userHandler.DeleteAccount)
-			// })
+			// Audit logs routes
+			r.Route("/audit-logs", func(r chi.Router) {
+				r.Get("/", app.auditHandler.GetUserAuditLogs) // Get user's audit logs
+			})
+
+			// User routes
+			r.Route("/users", func(r chi.Router) {
+				r.Post("/verify-password", app.userHandler.VerifyPassword) // Verify password
+			})
 		})
 	})
 
@@ -105,6 +108,7 @@ type application struct {
 	transactionHandler *transactions.Handler
 	fxHandler          *fxrates.Handler
 	auditService       *auditlogs.Service
+	auditHandler       *auditlogs.Handler
 }
 
 type config struct {

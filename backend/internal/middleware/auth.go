@@ -1,19 +1,10 @@
 package middleware
 
 import (
-	"context"
 	"net/http"
 	"strings"
 
 	"github.com/Bwise1/interstellar/internal/utils"
-	"github.com/google/uuid"
-)
-
-type contextKey string
-
-const (
-	UserIDKey contextKey = "user_id"
-	EmailKey  contextKey = "email"
 )
 
 // AuthMiddleware validates JWT tokens and adds user info to context
@@ -46,25 +37,14 @@ func AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		// Add user info to context
-		ctx := context.WithValue(r.Context(), UserIDKey, claims.UserID)
-		ctx = context.WithValue(ctx, EmailKey, claims.Email)
+		// Add user info to context using utils constants
+		ctx := r.Context()
+		ctx = utils.SetUserIDInContext(ctx, claims.UserID)
+		ctx = utils.SetEmailInContext(ctx, claims.Email)
 
 		// Call next handler with updated context
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
-}
-
-// GetUserIDFromContext retrieves the user ID from the request context
-func GetUserIDFromContext(ctx context.Context) (uuid.UUID, bool) {
-	userID, ok := ctx.Value(UserIDKey).(uuid.UUID)
-	return userID, ok
-}
-
-// GetEmailFromContext retrieves the email from the request context
-func GetEmailFromContext(ctx context.Context) (string, bool) {
-	email, ok := ctx.Value(EmailKey).(string)
-	return email, ok
 }
 
 // Helper function for error responses

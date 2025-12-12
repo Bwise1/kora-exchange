@@ -69,9 +69,16 @@ func main() {
 		log.Fatal("EXCHANGERATE_API_KEY is required")
 	}
 
+	// Get Audit Logs Password
+	auditPassword := getEnv("AUDIT_PASSWORD", "")
+	if auditPassword == "" {
+		log.Fatal("AUDIT_PASSWORD is required")
+	}
+
 	// Initialize audit log dependencies
 	auditRepo := auditlogs.NewRepository(pool)
 	auditService := auditlogs.NewService(auditRepo)
+	auditHandler := auditlogs.NewHandler(auditService)
 
 	// Initialize FX rates dependencies
 	fxService := fxrates.NewService(fxAPIKey)
@@ -90,7 +97,7 @@ func main() {
 	// Initialize user dependencies
 	userRepo := users.NewRepository(pool)
 	userService := users.NewService(userRepo)
-	userHandler := users.NewHandler(userService, walletService)
+	userHandler := users.NewHandler(userService, walletService, auditPassword)
 
 	api := application{
 		config:             cfg,
@@ -100,6 +107,7 @@ func main() {
 		transactionHandler: transactionHandler,
 		fxHandler:          fxHandler,
 		auditService:       auditService,
+		auditHandler:       auditHandler,
 	}
 
 	logger.Info("starting server", "address", cfg.addr)

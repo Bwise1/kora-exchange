@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/Bwise1/interstellar/internal/middleware"
+	"github.com/Bwise1/interstellar/internal/utils"
 	"github.com/Bwise1/interstellar/pkg/response"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -26,7 +26,7 @@ func NewHandler(service *Service) *Handler {
 // POST /api/transactions/deposit
 func (h *Handler) Deposit(w http.ResponseWriter, r *http.Request) {
 	// Get user ID from JWT context
-	userID, _ := middleware.GetUserIDFromContext(r.Context())
+	userID, _ := utils.GetUserIDFromContext(r.Context())
 	if userID == uuid.Nil {
 		response.Error(w, http.StatusUnauthorized, "Unauthorized")
 		return
@@ -59,7 +59,7 @@ func (h *Handler) Deposit(w http.ResponseWriter, r *http.Request) {
 // POST /api/transactions/swap
 func (h *Handler) Swap(w http.ResponseWriter, r *http.Request) {
 	// Get user ID from JWT context
-	userID, _ := middleware.GetUserIDFromContext(r.Context())
+	userID, _ := utils.GetUserIDFromContext(r.Context())
 	if userID == uuid.Nil {
 		response.Error(w, http.StatusUnauthorized, "Unauthorized")
 		return
@@ -99,7 +99,7 @@ func (h *Handler) Swap(w http.ResponseWriter, r *http.Request) {
 // GET /api/transactions?limit=10&offset=0
 func (h *Handler) GetTransactions(w http.ResponseWriter, r *http.Request) {
 	// Get user ID from JWT context
-	userID, _ := middleware.GetUserIDFromContext(r.Context())
+	userID, _ := utils.GetUserIDFromContext(r.Context())
 	if userID == uuid.Nil {
 		response.Error(w, http.StatusUnauthorized, "Unauthorized")
 		return
@@ -136,7 +136,7 @@ func (h *Handler) GetTransactions(w http.ResponseWriter, r *http.Request) {
 // GET /api/transactions/{id}
 func (h *Handler) GetTransaction(w http.ResponseWriter, r *http.Request) {
 	// Get user ID from JWT context
-	userID, _ := middleware.GetUserIDFromContext(r.Context())
+	userID, _ := utils.GetUserIDFromContext(r.Context())
 	if userID == uuid.Nil {
 		response.Error(w, http.StatusUnauthorized, "Unauthorized")
 		return
@@ -169,7 +169,7 @@ func (h *Handler) GetTransaction(w http.ResponseWriter, r *http.Request) {
 // POST /api/transactions/transfer
 func (h *Handler) Transfer(w http.ResponseWriter, r *http.Request) {
 	// Get user ID from JWT context
-	userID, _ := middleware.GetUserIDFromContext(r.Context())
+	userID, _ := utils.GetUserIDFromContext(r.Context())
 	if userID == uuid.Nil {
 		response.Error(w, http.StatusUnauthorized, "Unauthorized")
 		return

@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/Bwise1/interstellar/internal/utils"
 	"github.com/Bwise1/interstellar/pkg/response"
 	"github.com/google/uuid"
 )
@@ -14,6 +15,7 @@ import (
 type Handler struct {
 	service       *Service
 	walletService WalletService
+	auditPassword string
 }
 
 // WalletService interface for wallet operations
@@ -22,10 +24,11 @@ type WalletService interface {
 }
 
 // NewHandler creates a new user handler
-func NewHandler(service *Service, walletService WalletService) *Handler {
+func NewHandler(service *Service, walletService WalletService, auditPassword string) *Handler {
 	return &Handler{
 		service:       service,
 		walletService: walletService,
+		auditPassword: auditPassword,
 	}
 }
 
@@ -82,6 +85,38 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response.Success(w, http.StatusOK, "Login successful", loginResponse)
+}
+
+// VerifyPassword verifies the audit logs access password
+// POST /api/users/verify-password
+func (h *Handler) VerifyPassword(w http.ResponseWriter, r *http.Request) {
+	// Get user ID from JWT context to ensure user is authenticated
+	userID, ok := utils.GetUserIDFromContext(r.Context())
+	if !ok || userID == uuid.Nil {
+		response.Error(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	var req struct {
+		Password string `json:"password"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.Error(w, http.StatusBadRequest, "Invalid request payload")
+		return
+	}
+
+	if req.Password == "" {
+		response.Error(w, http.StatusBadRequest, "Password is required")
+		return
+	}
+
+	// Verify against generic audit password from env
+	if req.Password != h.auditPassword {
+		response.Error(w, http.StatusUnauthorized, "Invalid password")
+		return
+	}
+
+	response.Success(w, http.StatusOK, "Password verified successfully", map[string]bool{"verified": true})
 }
 
 // GetProfile gets the current user's profile

@@ -3,7 +3,7 @@ package wallets
 import (
 	"net/http"
 
-	"github.com/Bwise1/interstellar/internal/middleware"
+	"github.com/Bwise1/interstellar/internal/utils"
 	"github.com/Bwise1/interstellar/pkg/response"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -24,7 +24,7 @@ func NewHandler(service *Service) *Handler {
 // GET /api/wallets
 func (h *Handler) GetWallet(w http.ResponseWriter, r *http.Request) {
 
-	userID, ok := middleware.GetUserIDFromContext(r.Context())
+	userID, ok := utils.GetUserIDFromContext(r.Context())
 	if !ok {
 		response.Error(w, http.StatusUnauthorized, "Unauthorized")
 		return
@@ -68,7 +68,7 @@ func (h *Handler) GetWalletByID(w http.ResponseWriter, r *http.Request) {
 // GET /api/wallets/balance/:currency
 func (h *Handler) GetBalance(w http.ResponseWriter, r *http.Request) {
 	// Get user ID from JWT context
-	userID, ok := middleware.GetUserIDFromContext(r.Context())
+	userID, ok := utils.GetUserIDFromContext(r.Context())
 	if !ok {
 		response.Error(w, http.StatusUnauthorized, "Unauthorized")
 		return
@@ -101,7 +101,7 @@ func (h *Handler) GetBalance(w http.ResponseWriter, r *http.Request) {
 // GET /api/wallets/balances
 func (h *Handler) GetAllBalances(w http.ResponseWriter, r *http.Request) {
 
-	userID, ok := middleware.GetUserIDFromContext(r.Context())
+	userID, ok := utils.GetUserIDFromContext(r.Context())
 	if !ok {
 		response.Error(w, http.StatusUnauthorized, "Unauthorized")
 		return
