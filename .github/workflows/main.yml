@@ -1,0 +1,34 @@
+name: Backend Deploy
+
+on:
+  push:
+    paths:
+      - "backend/**"
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Deploy to Server
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout repo (needed for GitHub Action but not used on server)
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # SSH into your server and pull latest changes + restart PM2
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            cd /var/www/kora-exchange
+            git reset --hard
+            git pull origin main
+            cd backend
+            go mod tidy
+            pm2 restart kora-server
+            pm2 save
