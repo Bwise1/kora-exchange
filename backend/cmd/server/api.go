@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/Bwise1/interstellar/internal/auditlogs"
 	"github.com/Bwise1/interstellar/internal/fxrates"
 	"github.com/Bwise1/interstellar/internal/middleware"
 	"github.com/Bwise1/interstellar/internal/transactions"
@@ -33,8 +34,9 @@ func (app *application) mount() http.Handler {
 
 	// API routes
 	r.Route("/api", func(r chi.Router) {
-		// Auth routes (public)
+		// Auth routes (public) - with audit logging
 		r.Route("/auth", func(r chi.Router) {
+			r.Use(middleware.AuditMiddleware(app.auditService))
 			r.Post("/register", app.userHandler.Register)
 			r.Post("/login", app.userHandler.Login)
 		})
@@ -50,6 +52,7 @@ func (app *application) mount() http.Handler {
 		// Protected routes (require JWT authentication)
 		r.Group(func(r chi.Router) {
 			r.Use(middleware.AuthMiddleware)
+			r.Use(middleware.AuditMiddleware(app.auditService))
 
 			// Wallet routes
 			r.Route("/wallets", func(r chi.Router) {
@@ -101,6 +104,7 @@ type application struct {
 	walletHandler      *wallets.Handler
 	transactionHandler *transactions.Handler
 	fxHandler          *fxrates.Handler
+	auditService       *auditlogs.Service
 }
 
 type config struct {

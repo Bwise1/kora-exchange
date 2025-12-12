@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 
+	"github.com/Bwise1/interstellar/internal/auditlogs"
 	"github.com/Bwise1/interstellar/internal/fxrates"
 	"github.com/Bwise1/interstellar/internal/transactions"
 	"github.com/Bwise1/interstellar/internal/users"
@@ -68,6 +69,10 @@ func main() {
 		log.Fatal("EXCHANGERATE_API_KEY is required")
 	}
 
+	// Initialize audit log dependencies
+	auditRepo := auditlogs.NewRepository(pool)
+	auditService := auditlogs.NewService(auditRepo)
+
 	// Initialize FX rates dependencies
 	fxService := fxrates.NewService(fxAPIKey)
 	fxHandler := fxrates.NewHandler(fxService)
@@ -94,6 +99,7 @@ func main() {
 		walletHandler:      walletHandler,
 		transactionHandler: transactionHandler,
 		fxHandler:          fxHandler,
+		auditService:       auditService,
 	}
 
 	logger.Info("starting server", "address", cfg.addr)
