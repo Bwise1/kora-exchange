@@ -3,30 +3,55 @@ import Layout from '../components/Layout';
 import WalletCard from '../components/WalletCard';
 import TransactionList from '../components/TransactionList';
 import DepositModal from '../components/DepositModal';
-import { useWallet, useBalances } from '../hooks/useWallet';
+import ExchangeRatesCard from '../components/ExchangeRatesCard';
+import { useWallet, useBalances, useFxRates } from '../hooks/useWallet';
+import { fxRatesAPI } from '../services/api';
 import { Eye, Plus, ArrowLeftRight, Send, Download } from 'lucide-react';
 
 export default function Dashboard() {
   const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
+  const [isRefreshingRates, setIsRefreshingRates] = useState(false);
   const { data: walletData, isLoading: walletLoading, refetch: refetchWallet } = useWallet();
   const { data: balancesData, isLoading: balancesLoading, refetch: refetchBalances } = useBalances();
+  const { data: fxData, isLoading: fxLoading, refetch: refetchFxRates } = useFxRates('USD');
 
   const balances = balancesData?.data || walletData?.data?.balances || {};
-  const isLoading = walletLoading || balancesLoading;
+  const isLoading = walletLoading || balancesLoading || fxLoading;
 
-  // Calculate total portfolio value in USD (mock conversion for demo)
-  const exchangeRates = {
-    cNGN: 0.00065, // 1 NGN ≈ 0.00065 USD
-    cXAF: 0.0016,  // 1 XAF ≈ 0.0016 USD
-    USDx: 1,       // 1 USDx = 1 USD
-    EURx: 1.08,    // 1 EUR ≈ 1.08 USD
-    cGHS: 0.082,   // 1 GHS ≈ 0.082 USD
-    cKES: 0.0077,  // 1 KES ≈ 0.0077 USD
+  // Get real-time exchange rates from API with fallback
+  const apiRates = fxData?.data?.rates || {};
+
+  // Fallback mock rates if API fails (approximate values)
+  const mockRates = {
+    NGN: 1550,    // 1 USD = 1550 NGN
+    XAF: 606,     // 1 USD = 606 XAF
+    EUR: 0.92,    // 1 USD = 0.92 EUR
+    GHS: 15.20,   // 1 USD = 15.20 GHS
+    KES: 129.50,  // 1 USD = 129.50 KES
   };
 
+  // Use API rates if available, otherwise fallback to mock
+  const fxRates = Object.keys(apiRates).length > 0 ? apiRates : mockRates;
+
+  // Map stablecoin codes to their real currency codes for FX API
+  const currencyMapping = {
+    'cNGN': 'NGN',
+    'cXAF': 'XAF',
+    'USDx': 'USD',
+    'EURx': 'EUR',
+    'cGHS': 'GHS',
+    'cKES': 'KES',
+  };
+
+  // Calculate total portfolio value in USD using real-time rates
   const totalUSD = Object.entries(balances).reduce((sum, [currency, balance]) => {
-    const rate = exchangeRates[currency] || 0;
-    return sum + (balance * rate);
+    const realCurrency = currencyMapping[currency] || currency;
+    // If currency is USD, rate is 1, otherwise get rate from API
+    const rate = realCurrency === 'USD' ? 1 : (fxRates[realCurrency] || 0);
+    // Convert to USD (rates are from USD base, so we divide for non-USD currencies)
+    // Only calculate if rate is valid (not 0)
+    const usdValue = realCurrency === 'USD' ? balance : (rate > 0 ? balance / rate : 0);
+    return sum + usdValue;
   }, 0);
 
   const walletCount = Object.keys(balances).length || 4;
@@ -36,6 +61,18 @@ export default function Dashboard() {
     // Refetch wallet and balances after successful deposit
     refetchWallet();
     refetchBalances();
+  };
+
+  const handleRefreshRates = async () => {
+    setIsRefreshingRates(true);
+    try {
+      await fxRatesAPI.refreshRates('USD');
+      await refetchFxRates();
+    } catch (error) {
+      console.error('Failed to refresh rates:', error);
+    } finally {
+      setIsRefreshingRates(false);
+    }
   };
 
   return (
@@ -97,15 +134,21 @@ export default function Dashboard() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {Object.entries(balances).length > 0 ? (
-              Object.entries(balances).map(([currency, balance]) => (
-                <WalletCard
-                  key={currency}
-                  currency={currency}
-                  balance={balance}
-                  usdValue={balance * (exchangeRates[currency] || 0)}
-                  isLoading={isLoading}
-                />
-              ))
+              Object.entries(balances).map(([currency, balance]) => {
+                const realCurrency = currencyMapping[currency] || currency;
+                const rate = realCurrency === 'USD' ? 1 : (fxRates[realCurrency] || 0);
+                const usdValue = realCurrency === 'USD' ? balance : (rate > 0 ? balance / rate : 0);
+
+                return (
+                  <WalletCard
+                    key={currency}
+                    currency={currency}
+                    balance={balance}
+                    usdValue={usdValue}
+                    isLoading={isLoading}
+                  />
+                );
+              })
             ) : (
               // Default currencies
               ['cNGN', 'cXAF', 'USDx', 'EURx'].map((currency) => (
@@ -121,9 +164,19 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Recent Activity Section */}
-        <div className="mb-6">
-          <TransactionList />
+        {/* Recent Activity and Exchange Rates Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+          <div className="lg:col-span-2">
+            <TransactionList />
+          </div>
+          <div>
+            <ExchangeRatesCard
+              rates={fxRates}
+              lastUpdated={fxData?.data?.last_updated}
+              isLoading={fxLoading || isRefreshingRates}
+              onRefresh={handleRefreshRates}
+            />
+          </div>
         </div>
 
         {/* Deposit Modal */}

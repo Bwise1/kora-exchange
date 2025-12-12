@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/Bwise1/interstellar/internal/fxrates"
 	"github.com/Bwise1/interstellar/internal/middleware"
 	"github.com/Bwise1/interstellar/internal/transactions"
 	"github.com/Bwise1/interstellar/internal/users"
@@ -36,6 +37,14 @@ func (app *application) mount() http.Handler {
 		r.Route("/auth", func(r chi.Router) {
 			r.Post("/register", app.userHandler.Register)
 			r.Post("/login", app.userHandler.Login)
+		})
+
+		// FX Rates routes (public - no auth required)
+		r.Route("/fx-rates", func(r chi.Router) {
+			r.Get("/", app.fxHandler.GetAllRates)              // Get all rates (default USD base)
+			r.Get("/{currency}", app.fxHandler.GetRates)       // Get rates for specific base currency
+			r.Post("/convert", app.fxHandler.Convert)          // Convert between currencies
+			r.Post("/refresh", app.fxHandler.RefreshRates)    // Force refresh cache
 		})
 
 		// Protected routes (require JWT authentication)
@@ -89,6 +98,7 @@ type application struct {
 	userHandler        *users.Handler
 	walletHandler      *wallets.Handler
 	transactionHandler *transactions.Handler
+	fxHandler          *fxrates.Handler
 }
 
 type config struct {

@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { walletAPI, mockData } from '../services/api';
+import { walletAPI, fxRatesAPI, mockData } from '../services/api';
 
 export function useWallet() {
   return useQuery({
@@ -32,15 +32,12 @@ export function useTransactions() {
   });
 }
 
-export function useFxRates() {
-  // Using mock data until backend endpoint is ready
+export function useFxRates(baseCurrency = 'USD') {
   return useQuery({
-    queryKey: ['fxRates'],
-    queryFn: async () => {
-      await new Promise(resolve => setTimeout(resolve, 300));
-      return { data: mockData.fxRates };
-    },
-    staleTime: 60000,
+    queryKey: ['fxRates', baseCurrency],
+    queryFn: () => fxRatesAPI.getRates(baseCurrency),
+    staleTime: 3600000, // 1 hour - rates don't change that often
+    retry: 2,
   });
 }
 

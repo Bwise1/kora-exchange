@@ -87,6 +87,30 @@ export const transactionAPI = {
   },
 };
 
+// FX Rates API
+export const fxRatesAPI = {
+  getRates: async (baseCurrency = 'USD') => {
+    return fetchWithAuth(`/api/fx-rates?base=${baseCurrency}`);
+  },
+
+  getRatesForCurrency: async (currency) => {
+    return fetchWithAuth(`/api/fx-rates/${currency}`);
+  },
+
+  convert: async (from, to, amount) => {
+    return fetchWithAuth('/api/fx-rates/convert', {
+      method: 'POST',
+      body: JSON.stringify({ from, to, amount }),
+    });
+  },
+
+  refreshRates: async (baseCurrency = 'USD') => {
+    return fetchWithAuth(`/api/fx-rates/refresh?base=${baseCurrency}`, {
+      method: 'POST',
+    });
+  },
+};
+
 // Mock data for features not yet implemented in backend
 export const mockData = {
   transactions: [

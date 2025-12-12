@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 
+	"github.com/Bwise1/interstellar/internal/fxrates"
 	"github.com/Bwise1/interstellar/internal/transactions"
 	"github.com/Bwise1/interstellar/internal/users"
 	"github.com/Bwise1/interstellar/internal/utils"
@@ -61,6 +62,16 @@ func main() {
 	// Initialize JWT with secret and expiration (7 days)
 	utils.InitJWT(jwtSecret, 24*7)
 
+	// Get ExchangeRate-API key
+	fxAPIKey := getEnv("EXCHANGERATE_API_KEY", "")
+	if fxAPIKey == "" {
+		log.Fatal("EXCHANGERATE_API_KEY is required")
+	}
+
+	// Initialize FX rates dependencies
+	fxService := fxrates.NewService(fxAPIKey)
+	fxHandler := fxrates.NewHandler(fxService)
+
 	// Initialize wallet dependencies
 	walletRepo := wallets.NewRepository(pool)
 	walletService := wallets.NewService(walletRepo)
@@ -82,6 +93,7 @@ func main() {
 		userHandler:        userHandler,
 		walletHandler:      walletHandler,
 		transactionHandler: transactionHandler,
+		fxHandler:          fxHandler,
 	}
 
 	logger.Info("starting server", "address", cfg.addr)
