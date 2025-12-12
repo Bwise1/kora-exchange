@@ -62,6 +62,7 @@ func (app *application) mount() http.Handler {
 			// Transaction routes
 			r.Route("/transactions", func(r chi.Router) {
 				r.Post("/deposit", app.transactionHandler.Deposit)     // Deposit funds
+				r.Post("/swap", app.transactionHandler.Swap)           // Swap currencies
 				r.Get("/", app.transactionHandler.GetTransactions)     // Get all transactions
 				r.Get("/{id}", app.transactionHandler.GetTransaction)  // Get transaction by ID
 			})

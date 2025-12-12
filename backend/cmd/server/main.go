@@ -79,7 +79,7 @@ func main() {
 
 	// Initialize transaction dependencies
 	transactionRepo := transactions.NewRepository(pool)
-	transactionService := transactions.NewService(transactionRepo, walletRepo)
+	transactionService := transactions.NewService(transactionRepo, walletRepo, fxService)
 	transactionHandler := transactions.NewHandler(transactionService)
 
 	// Initialize user dependencies

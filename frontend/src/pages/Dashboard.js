@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import Layout from '../components/Layout';
 import WalletCard from '../components/WalletCard';
-import TransactionList from '../components/TransactionList';
+import WalletPieChart from '../components/WalletPieChart';
 import DepositModal from '../components/DepositModal';
+import SwapModal from '../components/SwapModal';
 import ExchangeRatesCard from '../components/ExchangeRatesCard';
 import { useWallet, useBalances, useFxRates } from '../hooks/useWallet';
 import { fxRatesAPI } from '../services/api';
@@ -10,6 +11,7 @@ import { Eye, Plus, ArrowLeftRight, Send, Download } from 'lucide-react';
 
 export default function Dashboard() {
   const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
+  const [isSwapModalOpen, setIsSwapModalOpen] = useState(false);
   const [isRefreshingRates, setIsRefreshingRates] = useState(false);
   const { data: walletData, isLoading: walletLoading, refetch: refetchWallet } = useWallet();
   const { data: balancesData, isLoading: balancesLoading, refetch: refetchBalances } = useBalances();
@@ -63,6 +65,12 @@ export default function Dashboard() {
     refetchBalances();
   };
 
+  const handleSwapSuccess = () => {
+    // Refetch wallet and balances after successful swap
+    refetchWallet();
+    refetchBalances();
+  };
+
   const handleRefreshRates = async () => {
     setIsRefreshingRates(true);
     try {
@@ -108,7 +116,10 @@ export default function Dashboard() {
                   <Plus className="w-4 h-4" />
                   Deposit
                 </button>
-                <button className="inline-flex items-center gap-2 px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded-lg font-medium transition-colors">
+                <button
+                  onClick={() => setIsSwapModalOpen(true)}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded-lg font-medium transition-colors"
+                >
                   <ArrowLeftRight className="w-4 h-4" />
                   Swap
                 </button>
@@ -164,10 +175,13 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Recent Activity and Exchange Rates Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-          <div className="lg:col-span-2">
-            <TransactionList />
+        {/* Wallet Distribution and Exchange Rates Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <div>
+            <WalletPieChart
+              balances={balances}
+              isLoading={isLoading}
+            />
           </div>
           <div>
             <ExchangeRatesCard
@@ -184,6 +198,14 @@ export default function Dashboard() {
           isOpen={isDepositModalOpen}
           onClose={() => setIsDepositModalOpen(false)}
           onSuccess={handleDepositSuccess}
+        />
+
+        {/* Swap Modal */}
+        <SwapModal
+          isOpen={isSwapModalOpen}
+          onClose={() => setIsSwapModalOpen(false)}
+          onSuccess={handleSwapSuccess}
+          balances={balances}
         />
       </div>
     </Layout>

@@ -78,6 +78,13 @@ export const transactionAPI = {
     });
   },
 
+  swap: async (fromCurrency, toCurrency, amount) => {
+    return fetchWithAuth('/api/transactions/swap', {
+      method: 'POST',
+      body: JSON.stringify({ from_currency: fromCurrency, to_currency: toCurrency, amount }),
+    });
+  },
+
   getTransactions: async (limit = 50, offset = 0) => {
     return fetchWithAuth(`/api/transactions?limit=${limit}&offset=${offset}`);
   },
