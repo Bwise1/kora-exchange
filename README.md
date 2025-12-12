@@ -57,8 +57,8 @@
 
 ### 1. Clone the Repository
 ```bash
-git clone <repository-url>
-cd Interstellar
+git clone https://github.com/Bwise1/kora-exchange.git
+cd kora-exchange
 ```
 
 ### 2. Database Setup
@@ -83,15 +83,12 @@ psql -U postgres -d interstellar -f sql/db.sql
 cd backend
 ```
 
-**Create `.env` file:**
-```env
-PORT=8080
-DATABASE_URL=postgres://postgres:password@localhost:5432/interstellar?sslmode=disable
-JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
-EXCHANGERATE_API_KEY=your-fastforex-api-key
-AUDIT_PASSWORD=admin123
+**Setup env :**
+```bash
+cp .env.example .env
 ```
-
+- replace env variables
+  
 **Install dependencies:**
 ```bash
 go mod download
@@ -99,7 +96,7 @@ go mod download
 
 **Run the server:**
 ```bash
-go run cmd/server/main.go
+go run cmd/server
 ```
 
 The backend server will start on `http://localhost:8080`
@@ -163,7 +160,7 @@ Since this is a sandbox prototype, you can create your own account through the r
 
 ---
 
-## 🎯 Feature Walkthrough
+## Feature Walkthrough
 
 ### 1. Registration & Login
 - **Register**: Create a new account with email and password
@@ -221,82 +218,15 @@ Since this is a sandbox prototype, you can create your own account through the r
 ```
 Interstellar/
 ├── backend/
-│   ├── cmd/
-│   │   └── server/
-│   │       ├── main.go          # Application entry point
-│   │       └── api.go           # Route definitions
-│   ├── internal/
-│   │   ├── fxrates/            # FX rate service (FastForex integration)
-│   │   ├── middleware/         # JWT auth & CORS
-│   │   ├── transactions/       # Deposit, swap, transfer logic
-│   │   ├── users/              # User management
-│   │   ├── wallets/            # Wallet operations
-│   │   └── utils/              # JWT utilities
-│   ├── pkg/
-│   │   └── response/           # Standardized API responses
-│   ├── sql/
-│   │   └── db.sql              # Database schema
-│   ├── go.mod
-│   ├── go.sum
-│   └── .env
-│
 ├── frontend/
-│   ├── public/
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── DepositModal.js
-│   │   │   ├── SwapModal.js
-│   │   │   ├── SendModal.js
-│   │   │   ├── WalletCard.js
-│   │   │   ├── WalletPieChart.js
-│   │   │   ├── ExchangeRatesCard.js
-│   │   │   ├── Layout.js
-│   │   │   └── Navbar.js
-│   │   ├── hooks/
-│   │   │   └── useWallet.js    # React Query hooks
-│   │   ├── pages/
-│   │   │   ├── Login.js
-│   │   │   ├── Register.js
-│   │   │   └── Dashboard.js
-│   │   ├── services/
-│   │   │   └── api.js          # API client
-│   │   ├── App.js
-│   │   └── index.js
-│   ├── package.json
-│   └── .env
-│
 └── README.md
 ```
 
 ---
 
-## API Endpoints
-
-### Authentication
-- `POST /api/auth/register` - Register new user
-- `POST /api/auth/login` - Login user
-
-### Wallets (Protected)
-- `GET /api/wallets` - Get user's wallet
-- `GET /api/wallets/balances` - Get all balances
-- `GET /api/wallets/balance/{currency}` - Get specific currency balance
-
-### Transactions (Protected)
-- `POST /api/transactions/deposit` - Deposit funds
-- `POST /api/transactions/swap` - Swap currencies
-- `POST /api/transactions/transfer` - Transfer to another wallet
-- `GET /api/transactions` - Get transaction history
-- `GET /api/transactions/{id}` - Get specific transaction
-
-### FX Rates (Public)
-- `GET /api/fx-rates?base=USD` - Get all exchange rates
-- `POST /api/fx-rates/convert` - Convert between currencies
-- `POST /api/fx-rates/refresh` - Force refresh cache
-
-### Audit Logs (Protected)
-- `POST /api/users/verify-password` - Verify audit access password
-- `GET /api/audit-logs?limit=100&offset=0` - Get user's audit logs
-
+### Deployment
+- backend is deployed on a vps and auto deployment is handled with github actions https://kora.benjys.me/
+- frontend is deployed on vercel https://kora-exchange.vercel.app/dashboard
 ---
 
 ### Database Schema
